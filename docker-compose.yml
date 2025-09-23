@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  react-web-ui5:
+    build: .
+    ports:
+      - "3030:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
