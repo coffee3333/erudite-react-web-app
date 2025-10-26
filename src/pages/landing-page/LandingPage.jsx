@@ -5,7 +5,14 @@ import SliderBar from "../../components/common/SliderBar.jsx";
 export default function LandingPage() {
     return (
         <>
-            <AppAppBar position="static"/>
+            <AppBar position="static" color="primary">
+                <Toolbar>
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        My Landingktufiztdiztdfuztdfuztdjzt
+                    </Typography>
+                    <Button color="inherit">Login</Button>
+                </Toolbar>
+            </AppBar>
             <Container maxWidth="md" sx={{ textAlign: "center", py: 10 }}>
                 <Typography variant="h2" gutterBottom>
                     Welcome to My Landing 🚀
