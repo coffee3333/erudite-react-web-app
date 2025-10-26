@@ -6,7 +6,7 @@ export default function LandingPage() {
             <AppBar position="static" color="primary">
                 <Toolbar>
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                        My Landing
+                        My Landingktufiztdiztdfuztdfuztdjzt
                     </Typography>
                     <Button color="inherit">Login</Button>
                 </Toolbar>
