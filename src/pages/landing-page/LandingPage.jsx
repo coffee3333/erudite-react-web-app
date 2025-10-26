@@ -1,4 +1,6 @@
 import { AppBar, Toolbar, Typography, Button, Container, Box } from "@mui/material";
+import AppAppBar from "../../components/common/AppAppBar.jsx"
+import SliderBar from "../../components/common/SliderBar.jsx";
 
 export default function LandingPage() {
     return (
@@ -23,6 +25,11 @@ export default function LandingPage() {
                     Get Started
                 </Button>
             </Container>
+
+            <SliderBar />
+
+
+
             <Box sx={{ bgcolor: "primary.main", color: "white", py: 2, mt: 5, textAlign: "center" }}>
                 <Typography variant="body1">© 2025 My Landing</Typography>
             </Box>
