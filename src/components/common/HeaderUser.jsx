@@ -11,7 +11,15 @@ import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import Logo from "./Logo.jsx";
 import { useNavigate } from 'react-router-dom';
+import Tooltip from '@mui/material/Tooltip';
+import Avatar from "@mui/material/Avatar";
+import Menu from '@mui/material/Menu';
+import useAuthStore from "../../stores/authStore.jsx";
+import {toast} from "react-hot-toast";
+import LinksBar from "./LinksBar.jsx";
+
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     display: 'flex',
@@ -29,14 +37,30 @@ const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     padding: '8px 12px',
 }));
 
-export default function AppAppBar() {
+export default function HeaderUser() {
+    const {user}  = useAuthStore.getState();
     const [open, setOpen] = React.useState(false);
     const navigate = useNavigate();
-
+    const [anchorElUser, setAnchorElUser] = React.useState(null);
 
     const toggleDrawer = (newOpen) => () => {
         setOpen(newOpen);
     };
+
+    const handleOpenUserMenu = (event) => {
+        setAnchorElUser(event.currentTarget);
+    };
+
+    const handleCloseUserMenu = () => {
+        setAnchorElUser(null);
+    };
+
+    const handleLogout = () => { //change it, use a logout with backend
+        useAuthStore.getState().logout();
+        setOpen(false);
+        toast.success('Successfully logged out!')
+        navigate('/');
+    }
 
     return (
         <AppBar
@@ -51,36 +75,39 @@ export default function AppAppBar() {
         >
             <Container maxWidth="lg">
                 <StyledToolbar variant="dense" disableGutters>
-                    <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', px: 0 }}>
-                        {/*<InTechLogoIcon />*/}
-                        <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                            <Button variant="text" color="info" size="small" onClick={() => navigate('/about-project')}>
-                                About Project
-                            </Button>
-                            <Button variant="text" color="info" size="small" sx={{ minWidth: 0 }} onClick={() => navigate('/faq')}>
-                                FAQ
-                            </Button>
-                        </Box>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: { xs: 'none', md: 'flex' },
-                            gap: 1,
-                            alignItems: 'center',
-                        }}
-                    >
-                        {/*<ColorSchemeToggle />*/}
-                        <Button color="primary" variant="text" size="small" onClick={() => navigate('/sign-in')}>
-                            Sign in
-                        </Button>
-                        <Button color="primary" variant="contained" size="small" onClick={() => navigate('/sign-up')}>
-                            Sign up
-                        </Button>
+                    <LinksBar />
+                    <Box sx={{  display: { xs: 'none', md: 'flex' }, gap: 1, alignItems: 'center',}}>
+                        <Tooltip title="Open menu">
+                            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0, border: 'none' }}>
+                                <Avatar alt={user.username} src={user.photo} sx={{ border: 'none', textTransform: 'uppercase'}} />
+                            </IconButton>
+                        </Tooltip>
+                        <Menu
+                            sx={{ mt: '45px' }}
+                            id="menu-appbar"
+                            anchorEl={anchorElUser}
+                            anchorOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                            keepMounted
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                            open={Boolean(anchorElUser)}
+                            onClose={handleCloseUserMenu}
+                        >
+                            <MenuItem onClick={() => navigate('/my-profile')}>
+                                My Profile
+                            </MenuItem>
+                            <Divider sx={{ my: 3 }} />
+                            <MenuItem onClick={handleLogout}>
+                                Log out
+                            </MenuItem>
+                        </Menu>
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1 }}>
-
-                        {/*<ColorSchemeToggle />*/}
-
                         <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
                             <MenuIcon />
                         </IconButton>
@@ -88,11 +115,6 @@ export default function AppAppBar() {
                             anchor="top"
                             open={open}
                             onClose={toggleDrawer(false)}
-                            PaperProps={{
-                                sx: {
-                                    top: 'var(--template-frame-height, 0px)',
-                                },
-                            }}
                         >
                             <Box sx={{ p: 2, backgroundColor: 'background.default' }}>
                                 <Box
@@ -108,14 +130,12 @@ export default function AppAppBar() {
                                 <MenuItem onClick={() => navigate('/about-project')}>About Project</MenuItem>
                                 <MenuItem onClick={() => navigate('/faq')}>FAQ</MenuItem>
                                 <Divider sx={{ my: 3 }} />
-                                <MenuItem>
-                                    <Button color="primary" variant="contained" fullWidth onClick={() => navigate('/sign-up')}>
-                                        Sign up
-                                    </Button>
+                                <MenuItem onClick={() => navigate('/my-profile')}>
+                                    My Profile
                                 </MenuItem>
                                 <MenuItem>
-                                    <Button color="primary" variant="outlined" fullWidth onClick={() => navigate('/sign-in')}>
-                                        Sign in
+                                    <Button color="primary" variant="outlined" fullWidth onClick={handleLogout}>
+                                        Log out
                                     </Button>
                                 </MenuItem>
                             </Box>
