@@ -1,6 +1,5 @@
-import { useCallback } from "react";
-import toast from "react-hot-toast";
-import authService from "../../api/endpoints/authService.jsx";
+import { useCallback } from 'react';
+import authService from '../../api/endpoints/authService.jsx';
 import useAuthStore from "../../stores/authStore.jsx";
 
 const useSignUp = () => {
@@ -11,13 +10,10 @@ const useSignUp = () => {
             toast.error("Please fill in all required fields.");
             return;
         }
-
         if (password !== password2) {
             toast.error("Passwords do not match.");
             return;
         }
-
-
 
         const registrationForm = new FormData();
         registrationForm.append("email", email);
@@ -27,15 +23,13 @@ const useSignUp = () => {
         registrationForm.append("role", role);
 
         try {
-            await authService.registration({registrationForm});
-            toast.success("Successfully signed up!");
-        } catch (error) {
-            console.error(error);
-            toast.error(error.message || "Signup failed.");
+            await authService.registration({ registrationForm });
+        } catch {
+            // interceptor + errorHandler['/users/auth/registration/'] handles the toast
         }
     }, []);
 
-    return { signUp, error, isLoading};
+    return { signUp, error, isLoading };
 };
 
 export default useSignUp;
