@@ -8,9 +8,6 @@ const useSignIn = () => {
 
     const signIn = useCallback(async (credentials) => {
         await authService.login(credentials);
-        if (error) {
-            toast.error(error.message);
-        }
         toast.success('Successfully logged in!');
     }, []);
 
