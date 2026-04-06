@@ -6,6 +6,17 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0",
-    allowedHosts: [ "*"],
+    allowedHosts: ["*"],
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    include: ['src/test/**/*.test.{js,jsx}'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      exclude: ['node_modules/', 'src/test/', '**/*.config.*', 'e2e/'],
+    },
   },
 })
