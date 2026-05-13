@@ -19,32 +19,32 @@ describe('errorHandler', () => {
     describe('/users/auth/registration/', () => {
         const handler = errorHandler['/users/auth/registration/'];
 
-        it('shows email error on 400 with email field', () => {
+        it('returns true on 400 (field errors handled inline by SignUp)', () => {
             const error = { response: { status: 400, data: { email: ['This email is already taken.'] } } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Email:'));
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
-        it('shows username error on 400 with username field', () => {
+        it('returns true on 400 with username field', () => {
             const error = { response: { status: 400, data: { username: ['Username too short.'] } } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Username:'));
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
-        it('shows password error on 400 with password field', () => {
+        it('returns true on 400 with password field', () => {
             const error = { response: { status: 400, data: { password: ['Password too weak.'] } } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Password:'));
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
-        it('shows generic message when no known fields', () => {
+        it('returns true on 400 with no known fields', () => {
             const error = { response: { status: 400, data: {} } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith('Registration failed. Please check your input.');
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
         it('returns false for non-400 status', () => {
@@ -54,22 +54,22 @@ describe('errorHandler', () => {
             expect(toast.error).not.toHaveBeenCalled();
         });
 
-        it('shows non_field_errors when present', () => {
+        it('returns true on 400 with non_field_errors', () => {
             const error = { response: { status: 400, data: { non_field_errors: ['Passwords do not match.'] } } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith('Passwords do not match.');
+            expect(toast.error).not.toHaveBeenCalled();
         });
     });
 
     describe('/users/auth/login/', () => {
         const handler = errorHandler['/users/auth/login/'];
 
-        it('shows invalid credentials on 400', () => {
+        it('returns true on 400 (validation handled by apiClient generic handler)', () => {
             const error = { response: { status: 400, data: {} } };
             const result = handler(error);
             expect(result).toBe(true);
-            expect(toast.error).toHaveBeenCalledWith('Invalid email or password.');
+            expect(toast.error).not.toHaveBeenCalled();
         });
 
         it('returns false for non-400 status', () => {
