@@ -6,7 +6,9 @@ import toast from 'react-hot-toast';
 import authService from '../../api/endpoints/authService.jsx';
 import { useNavigate } from 'react-router-dom';
 
-export default function GoogleLoginButton({ label = 'Continue with Google' }) {
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+function GoogleLoginButtonInner({ label }) {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -39,4 +41,9 @@ export default function GoogleLoginButton({ label = 'Continue with Google' }) {
             {loading ? 'Signing in…' : label}
         </Button>
     );
+}
+
+export default function GoogleLoginButton({ label = 'Continue with Google' }) {
+    if (!GOOGLE_CLIENT_ID) return null;
+    return <GoogleLoginButtonInner label={label} />;
 }
