@@ -33,6 +33,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
+      include: [
+        'src/hooks/**',
+        'src/api/**',
+        'src/stores/**',
+        'src/utils/**',
+      ],
       exclude: ['node_modules/', 'src/test/', '**/*.config.*', 'e2e/'],
     },
   },
