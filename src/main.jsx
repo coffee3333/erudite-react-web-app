@@ -250,10 +250,16 @@ function ThemedApp() {
     );
 }
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+const AppTree = (
+    <ColorModeProvider>
+        <ThemedApp />
+    </ColorModeProvider>
+);
+
 createRoot(document.getElementById('root')).render(
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-        <ColorModeProvider>
-            <ThemedApp />
-        </ColorModeProvider>
-    </GoogleOAuthProvider>,
+    googleClientId
+        ? <GoogleOAuthProvider clientId={googleClientId}>{AppTree}</GoogleOAuthProvider>
+        : AppTree
 );
