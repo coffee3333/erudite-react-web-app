@@ -20,6 +20,21 @@ const DIFFICULTIES = ['easy', 'medium', 'hard'];
 const LANGUAGES = ['python', 'javascript', 'java', 'cpp'];
 const MONACO_LANG = { python: 'python', javascript: 'javascript', java: 'java', cpp: 'cpp' };
 
+// Insert 4 spaces at cursor when Tab is pressed in a textarea
+function handleTabKey(e, value, onChange) {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const el = e.target;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = value.substring(0, start) + '    ' + value.substring(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+        el.selectionStart = start + 4;
+        el.selectionEnd = start + 4;
+    });
+}
+
 const STARTER_DEFAULTS = {
     python:     '# Write your solution here\n\nimport sys\n\ndef solve():\n    data = sys.stdin.read().strip()\n    # TODO\n    pass\n\nsolve()\n',
     javascript: '// Write your solution here\n\nconst lines = require("fs").readFileSync("/dev/stdin","utf8").trim().split("\\n");\n\nfunction solve() {\n    // TODO\n}\n\nsolve();\n',
@@ -128,7 +143,14 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                 Add Code Challenge
             </Button>
 
-            <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                maxWidth="md"
+                fullWidth
+                TransitionProps={{ onEntered: () => window.dispatchEvent(new Event('resize')) }}
+                PaperProps={{ sx: { maxHeight: '92vh' } }}
+            >
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     New Code Challenge
                     <IconButton size="small" onClick={handleClose}><CloseIcon fontSize="small" /></IconButton>
@@ -140,7 +162,9 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                         onChange={handleChange} size="small" required />
 
                     <TextField fullWidth multiline minRows={3} label="Problem Statement" name="body"
-                        value={form.body} onChange={handleChange} size="small" required />
+                        value={form.body} onChange={handleChange} size="small" required
+                        onKeyDown={e => handleTabKey(e, form.body, v => setForm(p => ({ ...p, body: v })))}
+                        helperText="Wrap LaTeX in delimiters: $inline$ or $$block$$" />
 
                     <Box sx={{ display: 'flex', gap: 1.5 }}>
                         <TextField select label="Language" name="language" value={form.language}
@@ -159,7 +183,7 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                     </Box>
 
                     {/* ── Starter code editor ── */}
-                    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
                         <Box sx={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             px: 1.5, py: 0.75,
@@ -179,7 +203,7 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                             }} />
                         </Box>
                         <Editor
-                            height="220px"
+                            height="320px"
                             language={MONACO_LANG[form.language] || 'plaintext'}
                             value={form.solution_template}
                             onChange={(val) => setForm((prev) => ({ ...prev, solution_template: val ?? '' }))}
@@ -213,6 +237,19 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                         <Typography variant="caption" sx={{ opacity: 0.6 }}>Test Cases</Typography>
                     </Divider>
 
+                    <Box sx={{
+                        px: 1.5, py: 1, borderRadius: 1,
+                        background: 'rgba(108,142,255,0.05)',
+                        border: '1px solid rgba(108,142,255,0.12)',
+                    }}>
+                        <Typography variant="caption" sx={{ opacity: 0.75, lineHeight: 1.6, display: 'block' }}>
+                            Each test runs your student's code with the given <strong>stdin</strong> and checks it matches <strong>expected stdout</strong> exactly (whitespace trimmed).
+                            Mark a test <em>Public</em> so students can see the input/output as an example, or <em>Hidden</em> to keep it as a blind validator.
+                            Add at least one test case — the challenge won't auto-grade without them.
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     {form.test_cases.map((tc, index) => (
                         <Box key={index} sx={{
                             border: '1px solid', borderColor: 'divider',
@@ -255,10 +292,10 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                                 </Box>
                             </Box>
 
-                            {/* stdin / stdout fields */}
-                            <Box sx={{ display: 'flex', gap: 0, '& > *': { flex: 1 } }}>
+                            {/* stdin / stdout fields — stack on small screens */}
+                            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 0, '& > *': { flex: 1 } }}>
                                 <TextField
-                                    multiline minRows={2}
+                                    multiline minRows={3}
                                     label="stdin (input)"
                                     value={tc.stdin}
                                     onChange={(e) => handleTestChange(index, 'stdin', e.target.value)}
@@ -266,12 +303,12 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                                     placeholder={"5\n3"}
                                     inputProps={{ spellCheck: false }}
                                     sx={{
-                                        '& .MuiOutlinedInput-root': { borderRadius: 0, borderRight: 'none' },
+                                        '& .MuiOutlinedInput-root': { borderRadius: { xs: 0, sm: 0 }, borderRight: { sm: 'none' } },
                                         '& .MuiInputBase-input': { fontFamily: 'monospace', fontSize: '0.82rem' },
                                     }}
                                 />
                                 <TextField
-                                    multiline minRows={2}
+                                    multiline minRows={3}
                                     label="expected stdout (output)"
                                     value={tc.expected}
                                     onChange={(e) => handleTestChange(index, 'expected', e.target.value)}
@@ -286,6 +323,7 @@ export default function CreateCodeChallengeButton({ topicId, owner, onCreated })
                             </Box>
                         </Box>
                     ))}
+                    </Box>
 
                     <Button
                         startIcon={<AddIcon />}

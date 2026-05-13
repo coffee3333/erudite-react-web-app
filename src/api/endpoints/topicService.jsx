@@ -3,9 +3,7 @@ import apiClient from '../apiClient';
 const topicService = {
     getCourseTopics: async ({ slug } ) => {
         try {
-            return await apiClient.get(`/platform/topics/${slug}/`,{
-                requiresAuth: false
-            });
+            return await apiClient.get(`/platform/topics/${slug}/`);
         } catch (err) {
             console.log(err.response);
             throw err;
@@ -43,6 +41,15 @@ const topicService = {
         // eslint-disable-next-line no-useless-catch
         try {
             return await apiClient.delete(`/platform/topics/${slug_topic}/delete/`);
+        } catch (err) {
+            console.log(err.response);
+            throw err;
+        }
+    },
+
+    getTopicItems: async ({ slug }) => {
+        try {
+            return await apiClient.get(`/platform/topics/${slug}/items/`);
         } catch (err) {
             console.log(err.response);
             throw err;

@@ -18,6 +18,7 @@ import useSignUp from "../../hooks/authHooks/useSignUp.jsx";
 import {FormHelperText} from "@mui/material";
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
+import toast from 'react-hot-toast';
 import GoogleLoginButton from "../../components/common/GoogleLoginButton.jsx";
 import ParticleBackground from '../MainPage/components/ParticleBackground.jsx';
 
@@ -41,7 +42,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 
 export default function SignUp() {
     const navigate = useNavigate();
-    const { signUp, error } = useSignUp();
+    const { signUp } = useSignUp();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -120,13 +121,13 @@ export default function SignUp() {
         }
     }, [password, passwordRepeat]);
 
-    // Handle server-side errors
+    // Live validation for role
     useEffect(() => {
-        if (error) {
-            setEmailError(true);
-            setEmailErrorMessage(error || 'Signup failed');
+        if (role) {
+            setRoleError(false);
+            setRoleErrorMessage('');
         }
-    }, [error]);
+    }, [role]);
 
     // Form submission validation
     const validateInputs = () => {
@@ -198,23 +199,25 @@ export default function SignUp() {
             if (data) {
                 if (data.password) {
                     setPasswordError(true);
-                    setPasswordErrorMessage(data.password);
+                    setPasswordErrorMessage(Array.isArray(data.password) ? data.password[0] : data.password);
                     setPasswordRepeat('');
                 }
                 if (data.username) {
+                    const msg = Array.isArray(data.username) ? data.username[0] : data.username;
                     setUsernameError(true);
-                    setUsernameErrorMessage(data.username);
+                    setUsernameErrorMessage(msg === 'This field must be unique.' ? 'This username is already taken.' : msg);
                 }
                 if (data.email) {
+                    const msg = Array.isArray(data.email) ? data.email[0] : data.email;
                     setEmailError(true);
-                    setEmailErrorMessage(data.email);
+                    setEmailErrorMessage(msg === 'This field must be unique.' ? 'An account with this email already exists.' : msg);
                 }
                 if (data.role) {
                     setRoleError(true);
-                    setRoleErrorMessage(data.role);
+                    setRoleErrorMessage(Array.isArray(data.role) ? data.role[0] : data.role);
                 }
             } else {
-                console.error('SignUp Error:', err);
+                toast.error('Something went wrong. Please try again.');
             }
         }
     };

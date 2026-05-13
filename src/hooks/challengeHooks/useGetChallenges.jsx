@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
-import toast from "react-hot-toast";
-import challengeService from "../../api/endpoints/challengeService.jsx";
+import challengeService from '../../api/endpoints/challengeService.jsx';
 
 const useGetChallenges = () => {
     const [challenges, setChallenges] = useState([]);
@@ -8,20 +7,17 @@ const useGetChallenges = () => {
     const [error, setError] = useState(null);
 
     const getChallengesViaTopic = useCallback(async ({ slug_topic }) => {
-        if (!slug_topic && slug_topic === "") {
-            console.log('Slug is undefined or null');
-            setError(new Error("Slug is required"));
-            return null;
+        if (!slug_topic) {
+            setError(new Error('Slug is required'));
+            return;
         }
         setLoading(true);
-        console.log('slug contents:', slug_topic); // Log the form object
+        setError(null);
         try {
             const res = await challengeService.getChallengesViaTopic({ slug_topic });
-
             setChallenges(res || []);
-        } catch (error) {
-            toast.error("Failed to fetch courses");
-            console.error(error);
+        } catch (err) {
+            setError(err);
         } finally {
             setLoading(false);
         }

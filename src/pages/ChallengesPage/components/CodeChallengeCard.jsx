@@ -1,6 +1,6 @@
 // CodeChallengeCard.jsx
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
     Box, Button, CircularProgress, Alert,
@@ -67,12 +67,38 @@ export default function CodeChallengeCard({ challenge, isPassed, onPassed }) {
     const [showRunResults, setShowRunResults] = useState(false);
     const [hintUsed, setHintUsed] = useState(challenge.user_hint_used || false);
     const [solutionRevealed, setSolutionRevealed] = useState(challenge.user_solution_revealed || false);
+    const [editorActive, setEditorActive] = useState(false);
+    const editorContainerRef = useRef(null);
     const { submitAnswer, loading: submitLoading } = useSubmitChallenge();
     const { runCode, loading: runLoading, runResult, clearRunResult } = useRunCode();
     const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
     const user = useAuthStore((s) => s.user);
     const emailVerified = user?.email_verified === true;
     const navigate = useNavigate();
+
+    const language = challenge.code_language || 'python';
+    const monacoLang = MONACO_LANG[language] || 'plaintext';
+    const isLoading = submitLoading || runLoading;
+
+    useEffect(() => {
+        const el = editorContainerRef.current;
+        if (!el) return;
+        const blockWheel = (e) => { if (!editorActive) e.stopPropagation(); };
+        el.addEventListener('wheel', blockWheel, { passive: false });
+        return () => el.removeEventListener('wheel', blockWheel);
+    }, [editorActive]);
+
+    useEffect(() => {
+        const handleMouseDown = (e) => {
+            if (editorContainerRef.current?.contains(e.target)) {
+                setEditorActive(true);
+            } else {
+                setEditorActive(false);
+            }
+        };
+        document.addEventListener('mousedown', handleMouseDown);
+        return () => document.removeEventListener('mousedown', handleMouseDown);
+    }, []);
 
     if (isPassed) {
         return (
@@ -111,10 +137,6 @@ export default function CodeChallengeCard({ challenge, isPassed, onPassed }) {
             </Box>
         );
     }
-
-    const language = challenge.code_language || 'python';
-    const monacoLang = MONACO_LANG[language] || 'plaintext';
-    const isLoading = submitLoading || runLoading;
 
     const handleRun = async () => {
         clearRunResult();
@@ -177,7 +199,7 @@ export default function CodeChallengeCard({ challenge, isPassed, onPassed }) {
             </Box>
 
             {/* Monaco Editor */}
-            <Box sx={{
+            <Box ref={editorContainerRef} sx={{
                 border: '1px solid rgba(255,255,255,0.07)',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',

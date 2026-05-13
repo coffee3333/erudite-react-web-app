@@ -71,6 +71,7 @@ export default function CourseForm({ onSubmit, loading, initialData = null }) {
             featured_image: null,
         }));
         setImagePreviewUrl(null);
+        setIsImageChanged(true);
     };
 
     const handleChange = (e) => {
@@ -105,7 +106,7 @@ export default function CourseForm({ onSubmit, loading, initialData = null }) {
             if (form.featured_image instanceof File) {
                 formData.append("featured_image", form.featured_image);
             } else if (form.featured_image === null && initialData?.featured_image) {
-                formData.append("featured_image", null);
+                formData.append("remove_featured_image", "1");
             }
         }
         formData.append("status", form.status);
@@ -176,6 +177,7 @@ export default function CourseForm({ onSubmit, loading, initialData = null }) {
             <div>
                 {imagePreviewUrl ? null :
                     <Button
+                        type="button"
                         aria-label="Upload featured image"
                         variant="outlined"
                         component="label"
@@ -235,6 +237,7 @@ export default function CourseForm({ onSubmit, loading, initialData = null }) {
                             />
                         </Box>
                         <Button
+                            type="button"
                             variant="outlined"
                             color="error"
                             onClick={handleRemoveImage}
@@ -278,6 +281,7 @@ export default function CourseForm({ onSubmit, loading, initialData = null }) {
                     <MenuItem value="published">Published</MenuItem>
                     <MenuItem value="draft">Draft</MenuItem>
                     <MenuItem value="archived">Archived</MenuItem>
+                    <MenuItem value="private">Private</MenuItem>
                 </Select>
                 {errors.status && <FormHelperText error>{errors.status}</FormHelperText>}
             </div>

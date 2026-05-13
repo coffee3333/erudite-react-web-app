@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import { useCallback, useState } from 'react';
 import toast from "react-hot-toast";
 import courseService from "../../api/endpoints/courseService.jsx";
 
@@ -7,20 +7,16 @@ const useUpdateCourse = (slug) => {
 
     const updateCourse = useCallback(async (courseForm) => {
         setLoading(true);
-
         try {
             await courseService.updateCourse({ courseForm, slug });
-            await new Promise(res => setTimeout(res,  1000));
-
             toast.success("Course edited successfully.");
-            setLoading(false);
             return true;
-
-        } catch (error) {
-            toast.error(error?.message || "Unknown error");
+        } catch {
             return null;
+        } finally {
+            setLoading(false);
         }
-    }, []);
+    }, [slug]);
 
     return { updateCourse, loading };
 };

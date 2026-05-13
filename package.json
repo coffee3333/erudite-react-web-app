@@ -10,21 +10,31 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
+    "@mui/utils": "^7.3.5",
+    "@react-oauth/google": "^0.13.4",
+    "axios": "^1.13.1",
+    "date-fns": "^4.1.0",
+    "katex": "^0.16.39",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-helmet-async": "^3.0.0",
     "react-hot-toast": "^2.6.0",
+    "react-masonry-css": "^1.0.16",
     "react-router-dom": "^7.9.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.5.2",

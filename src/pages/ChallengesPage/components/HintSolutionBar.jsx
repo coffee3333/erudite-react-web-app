@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import {
     Box, Button, CircularProgress, Collapse, Typography,
-    Dialog, DialogTitle, DialogContent, DialogActions,
+    Dialog, DialogTitle, DialogContent, DialogActions, useTheme,
 } from '@mui/material';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -19,6 +19,8 @@ import useHintReveal from '../../../hooks/challengeHooks/useHintReveal.jsx';
  */
 export default function HintSolutionBar({ challenge, onHintUsed, onSolutionRevealed, isLoggedIn }) {
     const { useHint, revealSolution, hintLoading, revealLoading } = useHintReveal();
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     const [hintText, setHintText] = useState(null);
     const [showHint, setShowHint] = useState(false);
@@ -144,7 +146,7 @@ export default function HintSolutionBar({ challenge, onHintUsed, onSolutionRevea
                     <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'secondary.light', mb: 0.5 }}>
                         Solution explanation
                     </Typography>
-                    <Typography sx={{ fontSize: '0.83rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                    <Typography sx={{ fontSize: '0.83rem', color: theme.palette.text.primary, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                         {solutionText}
                     </Typography>
                 </Box>

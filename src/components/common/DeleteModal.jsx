@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import Modal from '@mui/material/Modal';
-import React, {useState} from "react";
+import {useState} from "react";
 import DeleteIcon from '@mui/icons-material/Delete';
 import {Paper} from "@mui/material";
 import Stack from "@mui/material/Stack";
@@ -37,6 +37,7 @@ export default function DeleteModal({handleDelete, loading, success}) {
                 <Paper elevation={0} sx={style}>
                     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                         <Typography
+                            id="modal-modal-title"
                             variant="h6"
                             align="center"
                             sx={{ fontWeight: 600, mb: 2 }}
@@ -45,7 +46,7 @@ export default function DeleteModal({handleDelete, loading, success}) {
                         </Typography>
                         <Stack direction="row" spacing={2}>
                             <Button variant="contained" color="error" onClick={handleDelete} disabled={loading}>
-                                {success ? "Yes, delete" : loading ? "Deleting..." : "Deleted"}
+                                {loading ? "Deleting..." : "Yes, delete"}
                             </Button>
                             <Button variant="outlined" color="primary" onClick={handleClose}>
                                 Cancel

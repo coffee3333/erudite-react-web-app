@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { toAbsoluteUrl } from '../../../../utils/imageUtils';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
@@ -17,6 +18,8 @@ import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
+import { useNavigate } from 'react-router-dom';
 import { format, parse } from 'date-fns';
 import useCourseFeedback from '../../../../hooks/courseHooks/useCourseFeedback.jsx';
 import useAuthStore from '../../../../stores/authStore.jsx';
@@ -115,7 +118,7 @@ function ReviewCard({ item, onEdit, onDelete, submitting }) {
         }}>
             <Avatar sx={{ width: 36, height: 36, fontSize: 14, bgcolor: 'primary.dark' }}>
                 {item.photo
-                    ? <img src={item.photo} alt={item.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <img src={toAbsoluteUrl(item.photo)} alt={item.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : initials
                 }
             </Avatar>
@@ -254,6 +257,7 @@ function FeedbackDialog({ open, onClose, ownReview, slug, submitting, onSubmit, 
 }
 
 export default function CourseFeedbackSection({ slug, owner }) {
+    const navigate = useNavigate();
     const isLoggedIn = useAuthStore(s => s.isLoggedIn);
     const currentUser = useAuthStore(s => s.user);
     const { feedback, loading, submitting, fetchFeedback, submitFeedback, updateFeedback, deleteFeedback } = useCourseFeedback();
@@ -262,8 +266,9 @@ export default function CourseFeedbackSection({ slug, owner }) {
 
     const ownReview = feedback.find(f => f.is_own) ?? null;
     const isOwner = !!currentUser && currentUser.username === owner;
-    // Owner cannot review their own course — button hidden for them
-    const canReview = isLoggedIn && !isOwner;
+    const emailVerified = currentUser?.email_verified === true;
+    // Owner cannot review their own course; unverified users cannot review
+    const canReview = isLoggedIn && !isOwner && emailVerified;
 
     useEffect(() => {
         fetchFeedback(slug);
@@ -288,6 +293,28 @@ export default function CourseFeedbackSection({ slug, owner }) {
                     >
                         {ownReview ? 'Edit your review' : 'Write a review'}
                     </Button>
+                )}
+                {isLoggedIn && !isOwner && !emailVerified && (
+                    <Box sx={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 1.5, px: 1.5, py: 1.25, borderRadius: 1.5,
+                        border: '1px solid rgba(255,183,77,0.3)',
+                        background: 'rgba(255,183,77,0.06)',
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <VerifiedOutlinedIcon sx={{ fontSize: '1rem', color: '#FFD080', flexShrink: 0 }} />
+                            <Box component="span" sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.65)' }}>
+                                Verify your email to write a review.
+                            </Box>
+                        </Box>
+                        <Button size="small" variant="outlined" onClick={() => navigate('/my-profile')}
+                            sx={{ flexShrink: 0, fontSize: '0.75rem',
+                                borderColor: 'rgba(255,183,77,0.4)', color: '#FFD080',
+                                '&:hover': { borderColor: '#FFD080', background: 'rgba(255,183,77,0.08)' },
+                            }}>
+                            Verify now
+                        </Button>
+                    </Box>
                 )}
             </Box>
 

@@ -1,100 +1,74 @@
+import * as React from "react";
+import { useState } from "react";
 import {
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    TextField, CircularProgress,
+    IconButton, Tooltip, Dialog, DialogTitle, DialogContent,
+    DialogActions, Button, TextField, CircularProgress,
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
 import useIsOwner from "../../../../hooks/permissionHooks/useIsOwner.jsx";
 import useUpdateTopic from "../../../../hooks/topicHooks/useUpdateTopic.jsx";
-import EditIcon from '@mui/icons-material/Edit';
-import {useState, useEffect} from "react";
-
 
 export default function UpdateTopicButton({ slug, owner, initialTitle, onUpdated }) {
     const [open, setOpen] = useState(false);
     const [title, setTitle] = useState(initialTitle || "");
-    const [newTitle, setNewTitle] = useState("");
-    const [submitting, setSubmitting] = useState(false);
     const { loading, updateTopic } = useUpdateTopic();
 
-    const handleOpen = (e) => {
-        e.stopPropagation();
-        setOpen(true);
-    };
+    if (!useIsOwner({ owner })) return null;
 
-    const handleClose = (e) => {
-        e?.stopPropagation?.();
+    const handleClose = () => {
         setOpen(false);
         setTitle(initialTitle || "");
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!title.trim()) return;
-
-        setNewTitle(title);
-        setSubmitting(true);
-        handleClose();
-    };
-
-    useEffect(() => {
-        if (!open && submitting) {
-            const doUpdate = async () => {
-                try {
-                    await updateTopic({ slug, title: newTitle });
-                    onUpdated?.();
-                } catch (err) {
-                    console.error("Error updating topic:", err);
-                } finally {
-                    setSubmitting(false);
-                    setNewTitle("");
-                }
-            };
-            doUpdate();
+        try {
+            await updateTopic({ slug, title });
+            onUpdated?.();
+            handleClose();
+        } catch (err) {
+            console.error(err);
         }
-    }, [open, submitting, slug, newTitle, updateTopic, onUpdated]);
-
-    if (!useIsOwner({ owner })) return null;
+    };
 
     return (
         <>
-            <Button
-                color="primary"
-                variant="outlined"
-                onClick={handleOpen}
-                endIcon={loading ? <CircularProgress color="inherit" size={18} /> : <EditIcon />}
-                disabled={loading}
-            >
-                Update
-            </Button>
+            <Tooltip title="Edit topic">
+                <IconButton
+                    size="small"
+                    onClick={() => setOpen(true)}
+                    sx={{
+                        border: '1px solid rgba(108,142,255,0.25)',
+                        borderRadius: 1.5,
+                        color: 'primary.light',
+                        '&:hover': { background: 'rgba(108,142,255,0.1)', borderColor: 'primary.main' },
+                    }}
+                >
+                    <EditIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
 
-            <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>Update Topic</DialogTitle>
+            <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+                <DialogTitle sx={{ fontWeight: 700 }}>Edit Topic</DialogTitle>
                 <DialogContent sx={{ pt: 1 }}>
                     <TextField
-                        autoFocus
-                        fullWidth
-                        margin="dense"
-                        label="Topic Title"
-                        variant="outlined"
+                        autoFocus fullWidth margin="dense"
+                        label="Topic Title" variant="outlined"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleClose} size="small">Cancel</Button>
                     <Button
                         onClick={handleSubmit}
                         variant="contained"
-                        disabled={!title.trim() || loading}
-                        endIcon={
-                            loading ? (
-                                <CircularProgress color="inherit" size={18} />
-                            ) : null
-                        }
+                        size="small"
+                        disabled={!title.trim() || title === initialTitle || loading}
+                        endIcon={loading ? <CircularProgress color="inherit" size={14} /> : null}
                     >
-                        Update
+                        Save
                     </Button>
                 </DialogActions>
             </Dialog>

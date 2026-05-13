@@ -22,6 +22,7 @@ export default function CourseFormDialog({ open, onClose, onSubmit, loading, ini
     const isEdit = !!initialData;
     const [form, setForm] = useState(buildInitial(initialData));
     const [photoFile, setPhotoFile] = useState(null);
+    const [photoCleared, setPhotoCleared] = useState(false);
     const [errors, setErrors] = useState({});
 
     // Reset form whenever dialog opens
@@ -29,6 +30,7 @@ export default function CourseFormDialog({ open, onClose, onSubmit, loading, ini
         if (open) {
             setForm(buildInitial(initialData));
             setPhotoFile(null);
+            setPhotoCleared(false);
             setErrors({});
         }
     }, [open]);
@@ -59,12 +61,21 @@ export default function CourseFormDialog({ open, onClose, onSubmit, loading, ini
         fd.append('level', form.level);
         fd.append('language', form.language);
         fd.append('status', form.status);
-        if (photoFile) fd.append('featured_image', photoFile);
+        if (photoFile) {
+            fd.append('featured_image', photoFile);
+        } else if (photoCleared) {
+            fd.append('remove_featured_image', '1');
+        }
         onSubmit(fd);
     };
 
     const existingImageUrl = initialData?.featured_image || null;
     const isValid = Object.keys(errors).length === 0 && form.title.trim() && form.description.trim() && form.level;
+
+    const original = buildInitial(initialData);
+    const isDirty = photoFile !== null || photoCleared || Object.keys(original).some(k => form[k] !== original[k]);
+
+    const canSave = isEdit ? (isValid && isDirty) : isValid;
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -102,7 +113,10 @@ export default function CourseFormDialog({ open, onClose, onSubmit, loading, ini
 
                 <ImageUploadField
                     existingUrl={existingImageUrl}
-                    onChange={setPhotoFile}
+                    onChange={(file) => {
+                        setPhotoFile(file);
+                        setPhotoCleared(file === null && !!existingImageUrl);
+                    }}
                     label="Featured image"
                 />
 
@@ -135,7 +149,7 @@ export default function CourseFormDialog({ open, onClose, onSubmit, loading, ini
                     onClick={handleSubmit}
                     variant="contained"
                     size="small"
-                    disabled={!isValid || loading}
+                    disabled={!canSave || loading}
                     endIcon={loading ? <CircularProgress size={14} color="inherit" /> : null}
                 >
                     {isEdit ? 'Save' : 'Create'}

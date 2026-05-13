@@ -12,14 +12,17 @@ import TextFieldsIcon from '@mui/icons-material/TextFields';
 import QuizIcon from '@mui/icons-material/Quiz';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import KeyIcon from '@mui/icons-material/Key';
 import QuizChallengeCard from './components/QuizChallengeCard.jsx';
 import TextChallengeCard from './components/TextChallengeCard.jsx';
 import CodeChallengeCard from './components/CodeChallengeCard.jsx';
-import MathContent from '../../components/common/MathContent.jsx';
+import RichContent from '../../components/common/RichContent.jsx';
 import ImageUploadField from '../../components/common/ImageUploadField.jsx';
+import Editor from '@monaco-editor/react';
 import useIsOwner from '../../hooks/permissionHooks/useIsOwner.jsx';
 import useDeleteChallenge from '../../hooks/challengeHooks/useDeleteChallenge.jsx';
 import useUpdateChallenge from '../../hooks/challengeHooks/useUpdateChallenge.jsx';
@@ -38,16 +41,37 @@ const TYPE_ICON = {
 };
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
+const LANGUAGES = ['python', 'javascript', 'java', 'cpp'];
+const MONACO_LANG = { python: 'python', javascript: 'javascript', java: 'java', cpp: 'cpp' };
+
+// Insert 4 spaces at cursor when Tab is pressed in a textarea
+function handleTabKey(e, value, onChange) {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const el = e.target;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const next = value.substring(0, start) + '    ' + value.substring(end);
+    onChange(next);
+    requestAnimationFrame(() => {
+        el.selectionStart = start + 4;
+        el.selectionEnd = start + 4;
+    });
+}
 
 function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
     const [showAnswer, setShowAnswer] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [photoFile, setPhotoFile] = useState(null);
+    const [photoCleared, setPhotoCleared] = useState(false);
     const [form, setForm] = useState({});
+    const [testCases, setTestCases] = useState([]);
 
     const { deleteChallenge, loading: deleting } = useDeleteChallenge();
     const { updateChallenge, loading: updating } = useUpdateChallenge();
+
+    const EMPTY_TC = () => ({ stdin: '', expected_stdout: '', is_public: true });
 
     const buildForm = () => ({
         title: challenge.title || '',
@@ -59,11 +83,21 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
         case_sensitive: challenge.correct_answer?.case_sensitive || false,
         hint: challenge.hint || '',
         solution_explanation: challenge.solution_explanation || '',
+        code_template: challenge.code_template || '',
+        code_language: challenge.code_language || 'python',
     });
 
     const handleEditOpen = () => {
         setForm(buildForm());
         setPhotoFile(null);
+        setPhotoCleared(false);
+        setTestCases(
+            challenge.code_test_cases?.map(tc => ({
+                stdin: tc.stdin || '',
+                expected_stdout: tc.expected_stdout || '',
+                is_public: tc.is_public ?? true,
+            })) || [EMPTY_TC()]
+        );
         setEditOpen(true);
     };
 
@@ -83,12 +117,22 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
         fd.append('body', form.body);
         fd.append('difficulty', form.difficulty);
         fd.append('points', form.points);
-        fd.append('correct_answer', form.correct_answer);
-        fd.append('case_sensitive', form.case_sensitive);
-        if (challenge.challenge_type === 'quiz') fd.append('answers', form.answers);
         fd.append('hint', form.hint || '');
         fd.append('solution_explanation', form.solution_explanation || '');
-        if (photoFile) fd.append('photo', photoFile);
+        if (challenge.challenge_type === 'code') {
+            fd.append('code_template', form.code_template);
+            fd.append('code_language', form.code_language);
+            fd.append('test_cases', JSON.stringify(testCases));
+        } else {
+            fd.append('correct_answer', form.correct_answer);
+            fd.append('case_sensitive', form.case_sensitive);
+            if (challenge.challenge_type === 'quiz') fd.append('answers', form.answers);
+        }
+        if (photoFile) {
+            fd.append('photo', photoFile);
+        } else if (photoCleared) {
+            fd.append('photo', '');
+        }
         const res = await updateChallenge({ slug: challenge.slug, formData: fd });
         if (res) { setEditOpen(false); onUpdated?.(); }
     };
@@ -100,9 +144,23 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
         (challenge.challenge_type === 'code' || form.correct_answer?.trim()) &&
         (challenge.challenge_type !== 'quiz' || form.answers?.trim());
 
-    // Dirty: something changed from original values or a new photo was selected
+    // Dirty: something changed from original values or a new photo was selected/cleared
     const original = buildForm();
-    const isDirty = photoFile !== null || Object.keys(original).some(k => form[k] !== original[k]);
+    const originalTestCases = challenge.code_test_cases?.map(tc => ({
+        stdin: tc.stdin || '',
+        expected_stdout: tc.expected_stdout || '',
+        is_public: tc.is_public ?? true,
+    })) || [];
+    const testCasesDirty = challenge.challenge_type === 'code' && (
+        testCases.length !== originalTestCases.length ||
+        testCases.some((tc, i) =>
+            tc.stdin !== (originalTestCases[i]?.stdin ?? '') ||
+            tc.expected_stdout !== (originalTestCases[i]?.expected_stdout ?? '') ||
+            tc.is_public !== (originalTestCases[i]?.is_public ?? true)
+        )
+    );
+    const isDirty = photoFile !== null || photoCleared || testCasesDirty ||
+        Object.keys(original).some(k => form[k] !== original[k]);
 
     const isEditValid = requiredFilled && isDirty;
 
@@ -189,7 +247,10 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
             </Dialog>
 
             {/* Edit dialog */}
-            <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth
+                TransitionProps={{ onEntered: () => window.dispatchEvent(new Event('resize')) }}
+                PaperProps={{ sx: { maxHeight: '92vh' } }}
+            >
                 <DialogTitle sx={{ fontWeight: 700 }}>
                     Edit Challenge
                     <Chip
@@ -212,14 +273,24 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
                         fullWidth multiline minRows={3} name="body"
                         label="Question / Body"
                         value={form.body || ''} onChange={handleChange} size="small" required
+                        onKeyDown={e => handleTabKey(e, form.body || '', v => setForm(p => ({ ...p, body: v })))}
                         helperText="Wrap LaTeX in delimiters: $inline$ or $$block$$"
                     />
                     <ImageUploadField
                         existingUrl={existingPhotoUrl}
-                        onChange={setPhotoFile}
+                        onChange={(file) => {
+                            setPhotoFile(file);
+                            setPhotoCleared(file === null && !!challenge.photo);
+                        }}
                         label="Add / replace image"
                     />
                     <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        {challenge.challenge_type === 'code' && (
+                            <TextField select label="Language" name="code_language" value={form.code_language || 'python'}
+                                onChange={handleChange} size="small" sx={{ minWidth: 130 }}>
+                                {LANGUAGES.map(l => <MenuItem key={l} value={l}>{l}</MenuItem>)}
+                            </TextField>
+                        )}
                         <TextField select label="Difficulty" name="difficulty" value={form.difficulty || 'easy'}
                             onChange={handleChange} size="small" sx={{ minWidth: 120 }}>
                             {DIFFICULTIES.map(d => <MenuItem key={d} value={d} sx={{ textTransform: 'capitalize' }}>{d}</MenuItem>)}
@@ -227,6 +298,138 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
                         <TextField label="Points" name="points" type="number" value={form.points || 10}
                             onChange={handleChange} size="small" inputProps={{ min: 1, max: 1000 }} sx={{ maxWidth: 100 }} />
                     </Box>
+
+                    {challenge.challenge_type === 'code' && (
+                        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                            <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                px: 1.5, py: 0.75,
+                                background: 'rgba(108,142,255,0.06)',
+                                borderBottom: '1px solid', borderColor: 'divider',
+                            }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CodeIcon sx={{ fontSize: '0.95rem', opacity: 0.6 }} />
+                                    <Typography variant="caption" sx={{ fontWeight: 600, opacity: 0.8 }}>
+                                        Starter Code Template
+                                    </Typography>
+                                </Box>
+                                <Chip label={form.code_language || 'python'} size="small" sx={{
+                                    height: 20, fontSize: '0.68rem', fontWeight: 700,
+                                    background: 'rgba(108,142,255,0.15)', color: 'primary.light',
+                                    border: '1px solid rgba(108,142,255,0.25)',
+                                }} />
+                            </Box>
+                            <Editor
+                                height="300px"
+                                language={MONACO_LANG[form.code_language] || 'plaintext'}
+                                value={form.code_template || ''}
+                                onChange={(val) => setForm(prev => ({ ...prev, code_template: val ?? '' }))}
+                                theme="vs-dark"
+                                options={{
+                                    fontSize: 13,
+                                    fontFamily: '"Fira Mono", "Cascadia Code", monospace',
+                                    minimap: { enabled: false },
+                                    scrollBeyondLastLine: false,
+                                    lineNumbers: 'on',
+                                    tabSize: 4,
+                                    wordWrap: 'on',
+                                    padding: { top: 10, bottom: 10 },
+                                    scrollbar: { verticalScrollbarSize: 6 },
+                                }}
+                            />
+                        </Box>
+                    )}
+
+                    {challenge.challenge_type === 'code' && (
+                        <>
+                            <Divider>
+                                <Typography variant="caption" sx={{ opacity: 0.6 }}>Test Cases</Typography>
+                            </Divider>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {testCases.map((tc, i) => (
+                                    <Box key={i} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                                        <Box sx={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            px: 1.5, py: 0.6,
+                                            background: 'rgba(255,255,255,0.03)',
+                                            borderBottom: '1px solid', borderColor: 'divider',
+                                        }}>
+                                            <Typography variant="caption" sx={{ fontWeight: 600, opacity: 0.7 }}>
+                                                Test #{i + 1}
+                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                <Chip
+                                                    icon={tc.is_public
+                                                        ? <VisibilityIcon sx={{ fontSize: '0.75rem !important' }} />
+                                                        : <VisibilityOffIcon sx={{ fontSize: '0.75rem !important' }} />}
+                                                    label={tc.is_public ? 'Public' : 'Hidden'}
+                                                    size="small"
+                                                    onClick={() => setTestCases(prev => prev.map((t, idx) =>
+                                                        idx === i ? { ...t, is_public: !t.is_public } : t
+                                                    ))}
+                                                    sx={{
+                                                        height: 20, fontSize: '0.65rem', fontWeight: 600, cursor: 'pointer',
+                                                        background: tc.is_public ? 'rgba(76,175,80,0.15)' : 'rgba(255,152,0,0.12)',
+                                                        color: tc.is_public ? 'success.light' : 'warning.light',
+                                                        border: `1px solid ${tc.is_public ? 'rgba(76,175,80,0.3)' : 'rgba(255,152,0,0.25)'}`,
+                                                    }}
+                                                />
+                                                {testCases.length > 1 && (
+                                                    <IconButton size="small"
+                                                        onClick={() => setTestCases(prev => prev.filter((_, idx) => idx !== i))}
+                                                        sx={{ opacity: 0.5, '&:hover': { opacity: 1, color: 'error.light' } }}>
+                                                        <DeleteOutlineIcon sx={{ fontSize: '1rem' }} />
+                                                    </IconButton>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, '& > *': { flex: 1 } }}>
+                                            <TextField
+                                                multiline minRows={3}
+                                                label="stdin (input)"
+                                                value={tc.stdin}
+                                                onChange={e => setTestCases(prev => prev.map((t, idx) =>
+                                                    idx === i ? { ...t, stdin: e.target.value } : t
+                                                ))}
+                                                size="small"
+                                                placeholder="5"
+                                                inputProps={{ spellCheck: false }}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': { borderRadius: 0, borderRight: { sm: 'none' } },
+                                                    '& .MuiInputBase-input': { fontFamily: 'monospace', fontSize: '0.82rem' },
+                                                }}
+                                            />
+                                            <TextField
+                                                multiline minRows={3}
+                                                label="expected stdout (output)"
+                                                value={tc.expected_stdout}
+                                                onChange={e => setTestCases(prev => prev.map((t, idx) =>
+                                                    idx === i ? { ...t, expected_stdout: e.target.value } : t
+                                                ))}
+                                                size="small"
+                                                placeholder="6"
+                                                inputProps={{ spellCheck: false }}
+                                                sx={{
+                                                    '& .MuiOutlinedInput-root': { borderRadius: 0 },
+                                                    '& .MuiInputBase-input': { fontFamily: 'monospace', fontSize: '0.82rem' },
+                                                }}
+                                            />
+                                        </Box>
+                                    </Box>
+                                ))}
+                                <Button
+                                    startIcon={<AddIcon />}
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() => setTestCases(prev => [...prev, EMPTY_TC()])}
+                                    sx={{ alignSelf: 'flex-start' }}
+                                >
+                                    Add Test Case
+                                </Button>
+                            </Box>
+                        </>
+                    )}
+
                     {challenge.challenge_type === 'quiz' && (
                         <TextField
                             fullWidth label="Options (comma-separated)" name="answers"
@@ -247,12 +450,14 @@ function TeacherToolbar({ challenge, onDeleted, onUpdated }) {
                         fullWidth multiline minRows={2}
                         label="Hint (optional)" name="hint"
                         value={form.hint || ''} onChange={handleChange} size="small"
+                        onKeyDown={e => handleTabKey(e, form.hint || '', v => setForm(p => ({ ...p, hint: v })))}
                         helperText="Shown to students on demand — costs them 50% of points"
                     />
                     <TextField
                         fullWidth multiline minRows={2}
                         label="Solution explanation (optional)" name="solution_explanation"
                         value={form.solution_explanation || ''} onChange={handleChange} size="small"
+                        onKeyDown={e => handleTabKey(e, form.solution_explanation || '', v => setForm(p => ({ ...p, solution_explanation: v })))}
                         helperText="Full explanation revealed on demand — blocks student from submitting afterwards"
                     />
                 </DialogContent>
@@ -317,7 +522,7 @@ export default function ChallengeCard({ index, challenge, localPassed, onPassed,
 
             <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
                 {/* Header row */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: 1, minWidth: 0 }}>
                         <Box sx={{
                             minWidth: 28, height: 28, borderRadius: '50%', flexShrink: 0,
@@ -359,7 +564,7 @@ export default function ChallengeCard({ index, challenge, localPassed, onPassed,
 
                 {/* Body — supports LaTeX + image */}
                 {(challenge.body || photoUrl) && (
-                    <MathContent
+                    <RichContent
                         text={challenge.body}
                         photo={photoUrl}
                         photoAlt={challenge.title}

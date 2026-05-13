@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /courses
+Allow: /course/
+Allow: /about-project
+Allow: /faq
+Allow: /sign-in
+Allow: /sign-up
+
+Disallow: /my-profile
+Disallow: /topic/
+Disallow: /challenges/
+
+Sitemap: https://erudite.app/sitemap.xml

@@ -1,7 +1,7 @@
 // TextChallengeCard.jsx
 import * as React from 'react';
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, Button, CircularProgress, Alert, Typography, useTheme } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
@@ -13,6 +13,7 @@ import HintSolutionBar from './HintSolutionBar.jsx';
 export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
     const [answer, setAnswer] = useState('');
     const [wrongAnswer, setWrongAnswer] = useState(false);
+    const [emptyError, setEmptyError] = useState(false);
     const [hintUsed, setHintUsed] = useState(challenge.user_hint_used || false);
     const [solutionRevealed, setSolutionRevealed] = useState(challenge.user_solution_revealed || false);
     const { submitAnswer, loading } = useSubmitChallenge();
@@ -20,6 +21,8 @@ export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
     const user = useAuthStore((s) => s.user);
     const emailVerified = user?.email_verified === true;
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     if (isPassed) {
         return (
@@ -39,7 +42,7 @@ export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
             }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <VerifiedOutlinedIcon sx={{ fontSize: '1rem', color: '#FFD080', flexShrink: 0 }} />
-                    <Box component="span" sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.65)' }}>
+                    <Box component="span" sx={{ fontSize: '0.82rem', color: theme.palette.text.primary }}>
                         Verify your email to submit answers.
                     </Box>
                 </Box>
@@ -61,7 +64,11 @@ export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!answer.trim()) return;
+        if (!answer.trim()) {
+            setEmptyError(true);
+            return;
+        }
+        setEmptyError(false);
         setWrongAnswer(false);
         const res = await submitAnswer({
             slug_challenge: challenge.slug,
@@ -74,6 +81,9 @@ export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
         }
     };
 
+    const hasError = wrongAnswer || emptyError;
+    const borderColor = hasError ? 'rgba(244,67,54,0.5)' : 'rgba(108,142,255,0.2)';
+
     return (
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {wrongAnswer && (
@@ -83,45 +93,53 @@ export default function TextChallengeCard({ challenge, isPassed, onPassed }) {
             )}
 
             {!solutionRevealed && (
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                    <Box
-                        component="input"
-                        type="text"
-                        placeholder="Type your answer…"
-                        aria-label="Your answer"
-                        value={answer}
-                        onChange={(e) => { setAnswer(e.target.value); setWrongAnswer(false); }}
-                        disabled={loading}
-                        sx={{
-                            flex: 1,
-                            px: 1.5, py: 1,
-                            fontSize: '0.88rem',
-                            color: '#E8EAFF',
-                            background: 'rgba(108,142,255,0.06)',
-                            border: '1px solid',
-                            borderColor: wrongAnswer ? 'rgba(244,67,54,0.4)' : 'rgba(108,142,255,0.2)',
-                            borderRadius: '8px',
-                            outline: 'none',
-                            transition: 'border-color 0.2s, background 0.2s',
-                            '&:focus': {
-                                borderColor: 'rgba(108,142,255,0.6)',
-                                background: 'rgba(108,142,255,0.1)',
-                            },
-                            '&::placeholder': { color: 'rgba(255,255,255,0.25)' },
-                            '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
-                        }}
-                    />
-                    <Button
-                        type={isLoggedIn ? 'submit' : 'button'}
-                        variant="contained"
-                        size="small"
-                        disabled={isLoggedIn && (!answer.trim() || loading)}
-                        onClick={!isLoggedIn ? () => navigate('/sign-in') : undefined}
-                        endIcon={loading ? <CircularProgress size={13} color="inherit" /> : <SendIcon sx={{ fontSize: '0.85rem !important' }} />}
-                        sx={{ borderRadius: 1.5, px: 2, whiteSpace: 'nowrap', flexShrink: 0 }}
-                    >
-                        {isLoggedIn ? 'Submit' : 'Sign in'}
-                    </Button>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: { xs: 'stretch', sm: 'flex-start' } }}>
+                        <Box
+                            component="input"
+                            type="text"
+                            placeholder="Type your answer…"
+                            aria-label="Your answer"
+                            aria-invalid={hasError}
+                            value={answer}
+                            onChange={(e) => { setAnswer(e.target.value); setWrongAnswer(false); setEmptyError(false); }}
+                            disabled={loading}
+                            sx={{
+                                flex: 1,
+                                px: 1.5, py: 1,
+                                fontSize: '0.88rem',
+                                color: theme.palette.text.primary,
+                                background: isDark ? 'rgba(108,142,255,0.06)' : 'rgba(108,142,255,0.04)',
+                                border: '1px solid',
+                                borderColor,
+                                borderRadius: '8px',
+                                outline: 'none',
+                                transition: 'border-color 0.2s, background 0.2s',
+                                '&:focus': {
+                                    borderColor: hasError ? 'rgba(244,67,54,0.7)' : 'rgba(108,142,255,0.6)',
+                                    background: isDark ? 'rgba(108,142,255,0.1)' : 'rgba(108,142,255,0.07)',
+                                },
+                                '&::placeholder': { color: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(18,21,58,0.35)' },
+                                '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
+                            }}
+                        />
+                        <Button
+                            type={isLoggedIn ? 'submit' : 'button'}
+                            variant="contained"
+                            size="small"
+                            disabled={isLoggedIn && loading}
+                            onClick={!isLoggedIn ? () => navigate('/sign-in') : undefined}
+                            endIcon={loading ? <CircularProgress size={13} color="inherit" /> : <SendIcon sx={{ fontSize: '0.85rem !important' }} />}
+                            sx={{ borderRadius: 1.5, px: 2, whiteSpace: 'nowrap', flexShrink: 0 }}
+                        >
+                            {isLoggedIn ? 'Submit' : 'Sign in'}
+                        </Button>
+                    </Box>
+                    {emptyError && (
+                        <Typography sx={{ fontSize: '0.75rem', color: 'error.main', pl: 0.5 }}>
+                            Please enter your answer before submitting.
+                        </Typography>
+                    )}
                 </Box>
             )}
 

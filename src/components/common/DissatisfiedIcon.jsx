@@ -16,7 +16,7 @@ export default function DissatisfiedIcon({ text = "Something went wrong", descri
                 color: 'text.secondary',
             }}
         >
-            <SentimentDissatisfiedIcon sx={{ fontSize: size, mb: 2 }} />
+            <SentimentDissatisfiedIcon aria-hidden="true" sx={{ fontSize: size, mb: 2 }} />
             <Typography variant="h5" gutterBottom>
                 {text}
             </Typography>

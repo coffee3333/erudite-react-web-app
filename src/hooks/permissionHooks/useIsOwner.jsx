@@ -7,7 +7,6 @@ export default function useIsOwner({ owner }) {
     if (!isLoggedIn) return false;
     if (!user) return false;
     if (user.role !== "teacher") return false;
-    if (user.email_verified	 !== true) return false;
     if (owner !== user.username) return false;
 
     return true;

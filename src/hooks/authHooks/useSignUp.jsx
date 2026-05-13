@@ -7,12 +7,10 @@ const useSignUp = () => {
 
     const signUp = useCallback(async ({ email, username, password, password2, role }) => {
         if (!email || !username || !password || !password2 || !role) {
-            toast.error("Please fill in all required fields.");
-            return;
+            throw new Error("Please fill in all required fields.");
         }
         if (password !== password2) {
-            toast.error("Passwords do not match.");
-            return;
+            throw new Error("Passwords do not match.");
         }
 
         const registrationForm = new FormData();
@@ -24,8 +22,9 @@ const useSignUp = () => {
 
         try {
             await authService.registration({ registrationForm });
-        } catch {
+        } catch (err) {
             // interceptor + errorHandler['/users/auth/registration/'] handles the toast
+            throw err;
         }
     }, []);
 

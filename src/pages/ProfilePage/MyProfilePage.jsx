@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toAbsoluteUrl } from '../../utils/imageUtils';
 import {
     Box, Typography, Avatar, Chip, LinearProgress, Skeleton,
     Divider, Tooltip, IconButton, Collapse, Table, TableBody,
@@ -284,7 +285,7 @@ function StudentRow({ student }) {
                 <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar
-                            src={student.photo}
+                            src={student.photo ? toAbsoluteUrl(student.photo) : undefined}
                             sx={{
                                 width: 32, height: 32, fontSize: '0.8rem', fontWeight: 700,
                                 background: 'linear-gradient(135deg, #6C8EFF, #B06EFF)',
@@ -912,6 +913,7 @@ export default function MyProfilePage() {
     const [editFieldErrors, setEditFieldErrors] = useState({});
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [avatarCleared, setAvatarCleared] = useState(false);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -939,6 +941,7 @@ export default function MyProfilePage() {
         setEditFieldErrors({});
         setAvatarFile(null);
         setAvatarPreview(null);
+        setAvatarCleared(false);
         setEditing(true);
     };
 
@@ -947,6 +950,7 @@ export default function MyProfilePage() {
         setEditFieldErrors({});
         setAvatarFile(null);
         setAvatarPreview(null);
+        setAvatarCleared(false);
     };
 
     const handleAvatarChange = (e) => {
@@ -954,6 +958,7 @@ export default function MyProfilePage() {
         if (!file) return;
         setAvatarFile(file);
         setAvatarPreview(URL.createObjectURL(file));
+        setAvatarCleared(false);
     };
 
     const handleSave = async () => {
@@ -962,6 +967,7 @@ export default function MyProfilePage() {
         if (editForm.username !== profile.username) fd.append('username', editForm.username);
         fd.append('user_bio', editForm.user_bio);
         if (avatarFile) fd.append('photo', avatarFile);
+        else if (avatarCleared) fd.append('remove_photo', '1');
         const result = await updateProfile(fd);
         if (result?.fieldErrors) {
             setEditFieldErrors(result.fieldErrors);
@@ -971,7 +977,8 @@ export default function MyProfilePage() {
             setEditing(false);
             setAvatarFile(null);
             setAvatarPreview(null);
-            getDashboard();
+            setAvatarCleared(false);
+            await getDashboard();
         }
     };
 
@@ -1007,47 +1014,58 @@ export default function MyProfilePage() {
 
                     {/* Avatar */}
                     {editing ? (
-                        <Box
-                            onClick={() => fileInputRef.current?.click()}
-                            sx={{ position: 'relative', flexShrink: 0, cursor: 'pointer' }}
-                        >
-                            <Avatar
-                                src={avatarPreview || profile.photo}
-                                alt={profile.username}
-                                sx={{
-                                    width: 80, height: 80,
-                                    border: '2px dashed rgba(108,142,255,0.5)',
-                                    fontSize: '1.8rem', fontWeight: 700,
-                                    background: 'linear-gradient(135deg, #6C8EFF, #B06EFF)',
-                                    opacity: 0.85,
-                                }}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+                            <Box
+                                onClick={() => fileInputRef.current?.click()}
+                                sx={{ position: 'relative', cursor: 'pointer' }}
                             >
-                                {profile.username?.[0]?.toUpperCase()}
-                            </Avatar>
-                            <Box sx={{
-                                position: 'absolute', inset: 0, borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: 'rgba(0,0,0,0.3)',
-                            }}>
-                                <EditIcon sx={{ fontSize: '1rem', color: '#fff' }} />
+                                <Avatar
+                                    src={avatarCleared ? undefined : (avatarPreview || toAbsoluteUrl(profile.photo))}
+                                    alt={profile.username}
+                                    sx={{
+                                        width: 80, height: 80,
+                                        border: '2px dashed rgba(108,142,255,0.5)',
+                                        fontSize: '1.8rem', fontWeight: 700,
+                                        background: (!avatarCleared && (avatarPreview || profile.photo)) ? 'none' : 'linear-gradient(135deg, #6C8EFF, #B06EFF)',
+                                        opacity: 0.85,
+                                    }}
+                                >
+                                    {profile.username?.[0]?.toUpperCase()}
+                                </Avatar>
+                                <Box sx={{
+                                    position: 'absolute', inset: 0, borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    pointerEvents: 'none',
+                                }}>
+                                    <EditIcon sx={{ fontSize: '1rem', color: '#fff' }} />
+                                </Box>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleAvatarChange}
+                                />
                             </Box>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                onChange={handleAvatarChange}
-                            />
+                            {(avatarPreview || (profile.photo && !avatarCleared)) && (
+                                <Typography
+                                    onClick={(e) => { e.stopPropagation(); setAvatarFile(null); setAvatarPreview(null); setAvatarCleared(true); }}
+                                    sx={{ fontSize: '0.7rem', color: 'error.main', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                                >
+                                    Remove
+                                </Typography>
+                            )}
                         </Box>
                     ) : (
                         <Avatar
-                            src={profile.photo}
+                            src={toAbsoluteUrl(profile.photo)}
                             alt={profile.username}
                             sx={{
                                 width: 80, height: 80, flexShrink: 0,
                                 border: '2px solid rgba(108,142,255,0.3)',
                                 fontSize: '1.8rem', fontWeight: 700,
-                                background: 'linear-gradient(135deg, #6C8EFF, #B06EFF)',
+                                background: profile.photo ? 'none' : 'linear-gradient(135deg, #6C8EFF, #B06EFF)',
                             }}
                         >
                             {profile.username?.[0]?.toUpperCase()}

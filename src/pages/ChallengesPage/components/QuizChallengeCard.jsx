@@ -1,7 +1,6 @@
-// QuizChallengeCard.jsx
 import * as React from 'react';
 import { useState } from 'react';
-import { Box, RadioGroup, FormControlLabel, Radio, Button, CircularProgress, Alert } from '@mui/material';
+import { Box, RadioGroup, FormControlLabel, Radio, Button, CircularProgress, Alert, useTheme } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
 import useSubmitChallenge from '../../../hooks/challengeHooks/useSubmitChallenge.jsx';
@@ -12,6 +11,7 @@ import HintSolutionBar from './HintSolutionBar.jsx';
 export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
     const [selectedOptionId, setSelectedOptionId] = useState(null);
     const [wrongAnswer, setWrongAnswer] = useState(false);
+    const [emptyError, setEmptyError] = useState(false);
     const [hintUsed, setHintUsed] = useState(challenge.user_hint_used || false);
     const [solutionRevealed, setSolutionRevealed] = useState(challenge.user_solution_revealed || false);
     const { submitAnswer, loading } = useSubmitChallenge();
@@ -19,6 +19,8 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
     const user = useAuthStore((s) => s.user);
     const emailVerified = user?.email_verified === true;
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     if (isPassed) {
         return (
@@ -38,7 +40,7 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
             }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <VerifiedOutlinedIcon sx={{ fontSize: '1rem', color: '#FFD080', flexShrink: 0 }} />
-                    <Box component="span" sx={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.65)' }}>
+                    <Box component="span" sx={{ fontSize: '0.82rem', color: theme.palette.text.primary }}>
                         Verify your email to submit answers.
                     </Box>
                 </Box>
@@ -60,7 +62,11 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedOptionId) return;
+        if (!selectedOptionId) {
+            setEmptyError(true);
+            return;
+        }
+        setEmptyError(false);
         setWrongAnswer(false);
         const res = await submitAnswer({
             slug_challenge: challenge.slug,
@@ -73,11 +79,15 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
         }
     };
 
+    const optionBorderInactive = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(18,21,58,0.1)';
+    const optionHoverBorder = isDark ? 'rgba(108,142,255,0.25)' : 'rgba(108,142,255,0.3)';
+    const optionHoverBg = isDark ? 'rgba(108,142,255,0.05)' : 'rgba(108,142,255,0.04)';
+
     return (
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <RadioGroup
                 value={selectedOptionId ?? ''}
-                onChange={(e) => { setSelectedOptionId(e.target.value); setWrongAnswer(false); }}
+                onChange={(e) => { setSelectedOptionId(e.target.value); setWrongAnswer(false); setEmptyError(false); }}
             >
                 {challenge.options.map((opt) => (
                     <FormControlLabel
@@ -99,20 +109,26 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
                             border: '1px solid',
                             borderColor: String(selectedOptionId) === String(opt.id)
                                 ? 'rgba(108,142,255,0.35)'
-                                : 'rgba(255,255,255,0.06)',
+                                : optionBorderInactive,
                             background: String(selectedOptionId) === String(opt.id)
                                 ? 'rgba(108,142,255,0.08)'
                                 : 'transparent',
                             transition: 'all 0.15s',
                             '&:hover': {
-                                borderColor: 'rgba(108,142,255,0.25)',
-                                background: 'rgba(108,142,255,0.05)',
+                                borderColor: optionHoverBorder,
+                                background: optionHoverBg,
                             },
                             '& .MuiFormControlLabel-label': { fontSize: '0.88rem' },
                         }}
                     />
                 ))}
             </RadioGroup>
+
+            {emptyError && (
+                <Alert severity="error" sx={{ py: 0.5, borderRadius: 1.5 }}>
+                    Please select an option before submitting.
+                </Alert>
+            )}
 
             {wrongAnswer && (
                 <Alert severity="error" sx={{ py: 0.5, borderRadius: 1.5 }}>
@@ -132,7 +148,7 @@ export default function QuizChallengeCard({ challenge, isPassed, onPassed }) {
                     type={isLoggedIn ? 'submit' : 'button'}
                     variant="contained"
                     size="small"
-                    disabled={isLoggedIn && (!selectedOptionId || loading)}
+                    disabled={isLoggedIn && loading}
                     onClick={!isLoggedIn ? () => navigate('/sign-in') : undefined}
                     sx={{ mt: 0.5, borderRadius: 1.5, alignSelf: 'flex-start', px: 2.5 }}
                     endIcon={loading ? <CircularProgress size={13} color="inherit" /> : null}

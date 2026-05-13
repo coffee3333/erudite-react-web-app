@@ -39,7 +39,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 
 export default function SignIn() {
     const navigate = useNavigate();
-    const { signIn, error, isLoading } = useSignIn();
+    const { signIn, serverErrorMsg, isLoading } = useSignIn();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState(false);
@@ -78,21 +78,22 @@ export default function SignIn() {
     }, [password]);
 
     useEffect(() => {
-        if (error) {
-            setServerError(true);
+        if (serverErrorMsg) {
             setEmailError(true);
             setPasswordError(true);
-            setEmailErrorMessage('Invalid email address.');
-            setPasswordErrorMessage('Invalid password.');
+            setEmailErrorMessage('');
+            setPasswordErrorMessage(serverErrorMsg);
+            setServerError(true);
         }
-    }, [error]);
+    }, [serverErrorMsg]);
 
     useEffect(() => {
-        if (serverError && (email !== '' || password !== '')) {
+        if (serverError) {
             setServerError(false);
             setEmailError(false);
             setPasswordError(false);
-
+            setEmailErrorMessage('');
+            setPasswordErrorMessage('');
         }
     }, [email, password]);
 

@@ -1,5 +1,5 @@
 import apiClient from '../apiClient';
-import useAuthStore from '../../stores/authStore';
+import useAuthStore from "../../stores/authStore.jsx";
 import toast from "react-hot-toast";
 
 const authService = {
@@ -33,13 +33,8 @@ const authService = {
         store.setError(null);
 
         try {
-            const response = await apiClient.post('/users/auth/google/', {
-                access_token,
-            }, { withCredentials: true }, {
+            const response = await apiClient.post('/users/auth/google/', { access_token }, {
                 requiresAuth: false,
-                headers: {
-                    "Content-Type": "application/json"
-                }
             });
 
             const { access, refresh } = response;
@@ -47,8 +42,8 @@ const authService = {
             store.setAccessToken(access);
             store.setRefreshToken(refresh);
 
-            const userResponse = await apiClient.get('/users/profile/me/',);
-            store.setUser(userResponse); // <= если userResponse = данные
+            const userResponse = await apiClient.get('/users/profile/me/');
+            store.setUser(userResponse);
             store.setIsLoggedIn(true);
         } catch (err) {
             store.setError(err.message || 'Google login failed');
@@ -84,8 +79,18 @@ const authService = {
         }
     },
 
-    logout: () => {
-        useAuthStore.getState().logout();
+    logout: async () => {
+        const store = useAuthStore.getState();
+        const refresh = store.refreshToken;
+        try {
+            if (refresh) {
+                await apiClient.post('/users/auth/logout/', { refresh });
+            }
+        } catch (_) {
+            // token already expired or invalid — proceed with local cleanup
+        } finally {
+            store.logout();
+        }
     },
 };
 

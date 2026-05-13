@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -14,9 +16,23 @@ a {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.5;
   min-height: 100vh;
+  overflow-y: scroll;
+  background-color: #0D0F1A;
+  background-image:
+    linear-gradient(rgba(108, 142, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108, 142, 255, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  transition: background-color 0.25s ease;
+}
+
+:root[data-color-mode='light'] body {
+  background-color: #F0F2FA;
+  background-image:
+    linear-gradient(rgba(108, 142, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108, 142, 255, 0.05) 1px, transparent 1px);
 }
 
 img {
@@ -25,11 +41,27 @@ img {
   height: auto;
 }
 
-input, button, textarea, select {
+button {
   font: inherit;
   outline: none;
   border: none;
   background: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(108, 142, 255, 0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 142, 255, 0.45);
 }
 
 .my-masonry-grid {

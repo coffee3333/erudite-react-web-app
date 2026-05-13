@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { alpha, styled } from '@mui/material/styles';
+import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import MenuItem from '@mui/material/MenuItem';
@@ -13,26 +14,29 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import { useNavigate } from 'react-router-dom';
 import LinksBar from "./LinksBar.jsx";
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import { useColorMode } from '../../stores/colorModeStore.jsx';
 
 const StyledToolbar = styled(Toolbar)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     flexShrink: 0,
-    borderRadius: `calc(${theme.shape.borderRadius}px + 8px)`,
-    backdropFilter: 'blur(24px)',
-    border: '1px solid',
-    borderColor: (theme.vars || theme).palette.divider,
-    backgroundColor: theme.vars
-        ? `rgba(${theme.vars.palette.background.defaultChannel} / 0.4)`
-        : alpha(theme.palette.background.default, 0.4),
-    boxShadow: (theme.vars || theme).shadows[1],
-    padding: '8px 12px',
+    borderRadius: 14,
+    backdropFilter: 'blur(20px)',
+    border: '1px solid rgba(108, 142, 255, 0.14)',
+    backgroundColor: theme.palette.mode === 'dark'
+        ? 'rgba(13, 15, 26, 0.72)'
+        : 'rgba(240, 242, 250, 0.82)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.18)',
+    padding: '6px 16px',
 }));
 
 export default function Header() {
     const [open, setOpen] = React.useState(false);
     const navigate = useNavigate();
+    const { mode, toggleColorMode } = useColorMode();
 
 
     const toggleDrawer = (newOpen) => () => {
@@ -41,13 +45,15 @@ export default function Header() {
 
     return (
         <AppBar
+            component="nav"
+            aria-label="Site navigation"
             position="fixed"
             enableColorOnDark
             sx={{
                 boxShadow: 0,
                 bgcolor: 'transparent',
                 backgroundImage: 'none',
-                mt: 'calc(var(--template-frame-height, 0px) + 28px)',
+                mt: 2,
             }}
         >
             <Container maxWidth="lg">
@@ -60,7 +66,11 @@ export default function Header() {
                             alignItems: 'center',
                         }}
                     >
-                        {/*<ColorSchemeToggle />*/}
+                        <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+                            <IconButton size="small" onClick={toggleColorMode} sx={{ opacity: 0.65, '&:hover': { opacity: 1 } }}>
+                                {mode === 'dark' ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+                            </IconButton>
+                        </Tooltip>
                         <Button color="primary" variant="text" size="small" onClick={() => navigate('/sign-in')}>
                             Sign in
                         </Button>
@@ -69,9 +79,12 @@ export default function Header() {
                         </Button>
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1 }}>
-
+                        <Tooltip title={mode === 'dark' ? 'Light mode' : 'Dark mode'}>
+                            <IconButton size="small" onClick={toggleColorMode} sx={{ opacity: 0.65, '&:hover': { opacity: 1 } }}>
+                                {mode === 'dark' ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+                            </IconButton>
+                        </Tooltip>
                         {/*<ColorSchemeToggle />*/}
-
                         <IconButton aria-label="Menu button" onClick={toggleDrawer(true)}>
                             <MenuIcon />
                         </IconButton>
@@ -92,10 +105,11 @@ export default function Header() {
                                         justifyContent: 'flex-end',
                                     }}
                                 >
-                                    <IconButton onClick={toggleDrawer(false)}>
+                                    <IconButton onClick={toggleDrawer(false)} aria-label="Close menu">
                                         <CloseRoundedIcon />
                                     </IconButton>
                                 </Box>
+                                <MenuItem onClick={() => navigate('/courses')}>Courses</MenuItem>
                                 <MenuItem onClick={() => navigate('/about-project')}>About Project</MenuItem>
                                 <MenuItem onClick={() => navigate('/faq')}>FAQ</MenuItem>
                                 <Divider sx={{ my: 3 }} />

@@ -1,27 +1,3 @@
-import * as React from "react";
-import useIsOwner from "../../../hooks/permissionHooks/useIsOwner.jsx";
-import useDeleteTopic from "../../../hooks/topicHooks/useDeleteTopic.jsx";
-import DeleteModal from "../../../components/common/DeleteModal.jsx";
-
-
-export default function DeleteTopicButton({ slug_topic, owner, onDeleted }) {
-    const { loading, deleteTopic  } = useDeleteTopic();
-
-
-    const handleDelete = async () => {
-        try {
-            await deleteTopic({slug_topic});
-            onDeleted?.();
-        } catch (err) {
-            console.error("Error creating topic:", err);
-        }
-    };
-
-    if (!useIsOwner(owner = {owner})) return null;
-
-    return (
-        <>
-            <DeleteModal handleDelete={handleDelete} loading={loading} />
-        </>
-    );
-}
+// This file is superseded — challenge delete is now handled directly in ChallengeCard.jsx via TeacherToolbar.
+// Kept as empty re-export to avoid import errors if referenced elsewhere.
+export default function DeleteChallengeButton() { return null; }
