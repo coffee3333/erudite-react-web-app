@@ -62,8 +62,7 @@ export default function SignUp() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // Username validation regex (alphanumeric, 3-20 characters)
     const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
-    // Password validation regex (at least 8 characters, 1 uppercase, 1 lowercase, 1 digit, 1 special character)
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+    const passwordRegex = /^.{8,}$/;
 
     // Live validation for username
     useEffect(() => {
@@ -100,7 +99,7 @@ export default function SignUp() {
             setPasswordErrorMessage('');
         } else if (!passwordRegex.test(password)) {
             setPasswordError(true);
-            setPasswordErrorMessage('Password must be at least 8 characters, include 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (!@#$%^&*).');
+            setPasswordErrorMessage('Password must be at least 8 characters.');
         } else {
             setPasswordError(false);
             setPasswordErrorMessage('');
@@ -159,7 +158,7 @@ export default function SignUp() {
             isValid = false;
         } else if (!passwordRegex.test(password)) {
             setPasswordError(true);
-            setPasswordErrorMessage('Password must be at least 8 characters, include 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (!@#$%^&*).');
+            setPasswordErrorMessage('Password must be at least 8 characters.');
             isValid = false;
         }
 
